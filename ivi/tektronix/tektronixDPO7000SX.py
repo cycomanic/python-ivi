@@ -24,6 +24,7 @@ THE SOFTWARE.
 
 """
 
+import numpy as np
 from .tektronixBaseScope import *
 
 class tektronixDPO7000SX(tektronixBaseScope):
@@ -56,7 +57,9 @@ class tektronixDPO7000SX(tektronixBaseScope):
             self._write(":wfmoutpre:byt_or lsb")
         else:
             self._write(":wfmoutpre:byt_or msb")
-        acq_type = self._ask(":acquisition:mode:actual?")
+        acq_type = self._ask(":acquire:mode:actual?")
+        # if the scope is in sampling acquisition mode we should only use 8 bit
+        # resolution (see manual)
         if acq_type == 'normal':
             self._write(":wfmoutpre:byt_nr 1")
         else:
@@ -73,11 +76,11 @@ class tektronixDPO7000SX(tektronixBaseScope):
 
         format = pre[7].strip()
         points = int(pre[6])
-        xincr = float(pre[10])
-        xzero = float(pre[11])
-        ymult = float(pre[14])
-        yoff = float(pre[15])
-        yzero = int(float(pre[16]))
+        xincr = float(pre[9])
+        xzero = float(pre[10])
+        ymult = float(pre[13])
+        yoff = float(pre[14])
+        yzero = int(float(pre[15]))
 
         if type == 1:
             raise scope.InvalidAcquisitionTypeException()
@@ -85,17 +88,16 @@ class tektronixDPO7000SX(tektronixBaseScope):
         if format != 'Y':
             raise UnexpectedResponseException()
 
-        # Read waveform data
         raw_data = self._ask_for_ieee_block(":curve?")
-        self._read_raw() # flush buffer
-
-        # Split out points and convert to time and voltage pairs
+        self._read_raw() # flush buffer # Split out points and convert to time and voltage pairs
         if acq_type == 'normal':
             y_data = array.array('B', raw_data)
         else:
             y_data = array.array('H', raw_data)
 
-        data = [((i * xincr) + xzero, ((y - yoff) * ymult) + yzero) for i, y in enumerate(y_data)]
+        x_data = np.arange(len(y_data)) * xincr + xzero
+        y_data = (y_data - np.asarray(yoff)) * ymult + yzero
 
-        return data
+
+        return x_data, y_data
 
