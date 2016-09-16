@@ -57,10 +57,10 @@ class tektronixDPO7000SX(tektronixBaseScope):
             self._write(":wfmoutpre:byt_or lsb")
         else:
             self._write(":wfmoutpre:byt_or msb")
-        acq_type = self._ask(":acquire:mode:actual?")
+        acq_type = self._ask(":acquire:mode:actual?").lower()
         # if the scope is in sampling acquisition mode we should only use 8 bit
         # resolution (see manual)
-        if acq_type == 'normal':
+        if acq_type == 'sample':
             self._write(":wfmoutpre:byt_nr 1")
         else:
             self._write(":wfmoutpre:byt_nr 2")
@@ -90,14 +90,14 @@ class tektronixDPO7000SX(tektronixBaseScope):
 
         raw_data = self._ask_for_ieee_block(":curve?")
         self._read_raw() # flush buffer # Split out points and convert to time and voltage pairs
-        if acq_type == 'normal':
-            y_data = array.array('B', raw_data)
+        if acq_type == 'sample':
+            y_data_raw = array.array('B', raw_data)
         else:
-            y_data = array.array('H', raw_data)
+            y_data_raw = array.array('H', raw_data)
 
-        x_data = np.arange(len(y_data)) * xincr + xzero
-        y_data = (y_data - np.asarray(yoff)) * ymult + yzero
+        x_data = np.arange(len(y_data_raw)) * xincr + xzero
+        y_data = (y_data_raw - np.asarray(yoff)) * ymult + yzero
 
 
-        return x_data, y_data
+        return x_data, y_data, y_data_raw
 
