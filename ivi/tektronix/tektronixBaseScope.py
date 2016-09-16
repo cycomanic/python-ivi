@@ -224,7 +224,7 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
         self._identity_instrument_firmware_revision = ""
         self._identity_specification_major_version = 4
         self._identity_specification_minor_version = 1
-        self._identity_supported_instrument_models = ['DPO4032', 'DPO4034', 'DPO4054', 
+        self._identity_supported_instrument_models = ['DPO4032', 'DPO4034', 'DPO4054',
                 'DPO4104', 'DPO4014B', 'DPO4034B', 'DPO4054B', 'DPO4102B', 'DPO4104B',
                 'MSO4032', 'MSO4034', 'MSO4054', 'MSO4104', 'MSO4014B', 'MSO4034B',
                 'MSO4054B', 'MSO4102B', 'MSO4104B', 'MDO4054', 'MDO4104', 'MDO4014B',
@@ -843,7 +843,7 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
         self._channel_scale[index] = value
         self._set_cache_valid(index=index)
         self._set_cache_valid(False, "channel_offset", index)
-    
+
     def _get_channel_trigger_level(self, index):
         index = ivi.get_index(self._channel_name, index)
         if not self._driver_operation_simulate and not self._get_cache_valid(index=index):
@@ -1301,10 +1301,10 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
         raw_data = self._ask_for_ieee_block(":curve?")
         self._read_raw() # flush buffer
 
-        # Split out points and convert to time and voltage pairs
+        # Split out points and convert to time and voltage arrays
         y_data = array.array('H', raw_data)
-
-        data = [((i * xincr) + xzero, ((y - yoff) * ymult) + yzero) for i, y in enumerate(y_data)]
+        x_data = np.arange(len(y_data)) * xincr + xzero
+        y_data = (y_data - yoff) * ymult + yzero
 
         return data
 
@@ -1434,7 +1434,7 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
             self._write(":acquire:numavg %d" % value)
         self._acquisition_number_of_averages = value
         self._set_cache_valid()
-    
+
     def _get_trigger_modifier(self):
         if not self._driver_operation_simulate and not self._get_cache_valid():
             value = self._ask(":trigger:a:mode?").lower()
