@@ -24,9 +24,13 @@ THE SOFTWARE.
 
 """
 
+import array
 import io
-import time
 import struct
+import sys
+import time
+
+import numpy as np
 
 from . import hprtl
 
@@ -50,8 +54,8 @@ ALCSourceMapping = {'internal': 'int',
 PowerMode = set(['fixed', 'sweep'])
 
 class agilentBase8590(ivi.Driver, specan.Base,
-                extra.common.Memory, extra.common.Title, extra.common.SystemSetup, extra.common.Screenshot):
-    "Agilent Base8590 series IVI spectrum analyzer driver"
+                extra.common.SerialNumber, extra.common.Memory, extra.common.Title, extra.common.SystemSetup, extra.common.Screenshot):
+    "Agilent 8590 series IVI spectrum analyzer driver"
     
     def __init__(self, *args, **kwargs):
         self.__dict__.setdefault('_instrument_id', '')
@@ -172,18 +176,16 @@ class agilentBase8590(ivi.Driver, specan.Base,
         if self._driver_operation_simulate:
             self._identity_instrument_manufacturer = "Not available while simulating"
             self._identity_instrument_model = "Not available while simulating"
+            self._identity_instrument_serial_number = "Not available while simulating"
             self._identity_instrument_firmware_revision = "Not available while simulating"
         else:
-            #lst = self._ask("*IDN?").split(",")
-            #self._identity_instrument_manufacturer = lst[0]
-            #self._identity_instrument_model = lst[1]
-            #self._identity_instrument_firmware_revision = lst[3]
-            
             self._identity_instrument_manufacturer = "Agilent Technologies"
             self._identity_instrument_model = self._ask("ID?")
+            self._identity_instrument_serial_number = self._ask("SER?")
             self._identity_instrument_firmware_revision = self._ask("REV?")
             self._set_cache_valid(True, 'identity_instrument_manufacturer')
             self._set_cache_valid(True, 'identity_instrument_model')
+            self._set_cache_valid(True, 'identity_instrument_serial_number')
             self._set_cache_valid(True, 'identity_instrument_firmware_revision')
     
     def _get_identity_instrument_manufacturer(self):
@@ -197,6 +199,12 @@ class agilentBase8590(ivi.Driver, specan.Base,
             return self._identity_instrument_model
         self._load_id_string()
         return self._identity_instrument_model
+    
+    def _get_identity_instrument_serial_number(self):
+        if self._get_cache_valid():
+            return self._identity_instrument_serial_number
+        self._load_id_string()
+        return self._identity_instrument_serial_number
     
     def _get_identity_instrument_firmware_revision(self):
         if self._get_cache_valid():
@@ -255,7 +263,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
         self._trace_name = list()
         self._trace_type = list()
         for i in range(self._trace_count):
-            self._trace_name.append("trace%d" % (i+1))
+            self._trace_name.append("tr%c" % (i+ord('a')))
             self._trace_type.append('')
 
         self.traces._set_list(self._trace_name)
@@ -318,9 +326,9 @@ class agilentBase8590(ivi.Driver, specan.Base,
 
         # rescale to get white background
         # presuming background of (90, 88, 85)
-        img[:,:,0] *= 255/90
-        img[:,:,1] *= 255/88
-        img[:,:,2] *= 255/85
+        np.multiply(img[:,:,0], 255/90, out=img[:,:,0], casting='unsafe')
+        np.multiply(img[:,:,1], 255/88, out=img[:,:,1], casting='unsafe')
+        np.multiply(img[:,:,2], 255/85, out=img[:,:,2], casting='unsafe')
 
         bmp = hprtl.generate_bmp(img)
 
@@ -491,7 +499,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_level_attenuation(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("at %e" % value)
+            self._write("at %e db" % value)
         self._level_attenuation = value
         self._set_cache_valid()
     
@@ -537,7 +545,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_frequency_start(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("fa %f" % value)
+            self._write("fa %f hz" % value)
         self._frequency_start = value
         self._set_cache_valid()
         self._set_cache_valid(False, 'frequency_center')
@@ -555,7 +563,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_frequency_stop(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("fb %f" % value)
+            self._write("fb %f hz" % value)
         self._frequency_stop = value
         self._set_cache_valid()
         self._set_cache_valid(False, 'frequency_center')
@@ -573,7 +581,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_frequency_center(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("cf %f" % value)
+            self._write("cf %f hz" % value)
         self._frequency_center = value
         self._set_cache_valid()
         self._set_cache_valid(False, 'frequency_start')
@@ -591,7 +599,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_frequency_span(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("sp %f" % value)
+            self._write("sp %f hz" % value)
         self._frequency_span = value
         self._set_cache_valid()
         self._set_cache_valid(False, 'frequency_start')
@@ -609,7 +617,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_frequency_offset(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("foffset %e" % value)
+            self._write("foffset %e hz" % value)
         self._frequency_offset = value
         self._set_cache_valid()
     
@@ -636,7 +644,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_level_reference(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("rl %e" % value)
+            self._write("rl %e db" % value)
         self._level_reference = value
         self._set_cache_valid()
     
@@ -649,7 +657,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_level_reference_offset(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("roffset %e" % value)
+            self._write("roffset %e db" % value)
         self._level_reference_offset = value
         self._set_cache_valid()
     
@@ -662,7 +670,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_sweep_coupling_resolution_bandwidth(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("rb %e" % value)
+            self._write("rb %e hz" % value)
         self._sweep_coupling_resolution_bandwidth = value
         self._sweep_coupling_resolution_bandwidth_auto = False
         self._set_cache_valid()
@@ -698,7 +706,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_sweep_coupling_sweep_time(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("st %e" % value)
+            self._write("st %e s" % value)
         self._sweep_coupling_sweep_time = value
         self._sweep_coupling_sweep_time_auto = False
         self._set_cache_valid()
@@ -755,7 +763,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
     def _set_sweep_coupling_video_bandwidth(self, value):
         value = float(value)
         if not self._driver_operation_simulate:
-            self._write("vb %e" % value)
+            self._write("vb %e hz" % value)
         self._sweep_coupling_video_bandwidth = value
         self._sweep_coupling_video_bandwidth_auto = False
         self._set_cache_valid()
@@ -785,7 +793,7 @@ class agilentBase8590(ivi.Driver, specan.Base,
         index = ivi.get_index(self._trace_name, index)
 
         if self._driver_operation_simulate:
-            return list()
+            return ivi.TraceY()
 
         cmd = ''
 
@@ -796,34 +804,40 @@ class agilentBase8590(ivi.Driver, specan.Base,
         elif index == 2:
             cmd = 'trc?'
         else:
-            return list()
+            return None
 
-        self._write('tdf a')
-        self._write('mds w')
+        log_scale = float(self._ask("lg?"))
+        ref_level = float(self._ask("rl?"))
+
+        self._write('tdf a; mds w;')
         self._write(cmd)
-
 
         buf = self._read_raw(4)
         if buf[0:2] != b'#A':
-            return list()
+            return None
 
         cnt = struct.unpack(">H", buf[2:4])[0]
         buf = self._read_raw(cnt)
 
-        data = list()
+        trace = ivi.TraceY()
 
-        if self._get_acquisition_vertical_scale() == 'logarithmic':
-            offset = self._get_level_reference()-80
-            scale = 80
+        if log_scale > 0:
+            # log scale
+            trace.y_increment = 0.01
+            trace.y_origin = ref_level
+            trace.y_reference = 8000
         else:
-            offset = 0
-            scale = self._get_level_reference()
+            # linear scale
+            trace.y_increment = ref_level/8000
+            trace.y_origin = 0
+            trace.y_reference = 0
 
-        for i in range(int(cnt/2)):
-                p = struct.unpack(">h", buf[i*2:i*2+2])[0]
-                data.append((p*scale)/8000+offset)
+        trace.y_raw = array.array('h', buf)
 
-        return data
+        if sys.byteorder == 'little':
+            trace.y_raw.byteswap()
+
+        return trace
 
     def _acquisition_initiate(self):
         pass
