@@ -2,7 +2,7 @@
 
 Python Interchangeable Virtual Instrument Library
 
-Copyright (c) 2016 Alex Forencich
+Copyright (c) 2016-2017 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -1278,16 +1278,18 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
         # Read preamble
         pre = self._ask(":wfmoutpre?").split(';')
 
-        acq_format = pre[7].strip()
+        acq_format = pre[7].strip().upper()
         points = int(pre[6])
         point_size = int(pre[0])
-        point_enc = pre[2]
-        point_fmt = pre[3]
+        point_enc = pre[2].strip().upper()
+        point_fmt = pre[3].strip().upper()
+        byte_order = pre[4].strip().upper()
         trace.x_increment = float(pre[10])
         trace.x_origin = float(pre[11])
+        trace.x_reference = int(float(pre[12]))
         trace.y_increment = float(pre[14])
-        trace.y_reference = float(pre[15])
-        trace.y_origin = int(float(pre[16]))
+        trace.y_reference = int(float(pre[15]))
+        trace.y_origin = float(pre[16])
 
         if acq_format != 'Y':
             raise UnexpectedResponseException()
@@ -1317,7 +1319,7 @@ class tektronixBaseScope(scpi.common.IdnCommand, scpi.common.Reset, scpi.common.
         else:
             raise UnexpectedResponseException()
 
-        if sys.byteorder == 'little':
+        if (byte_order == 'LSB') != (sys.byteorder == 'little'):
             trace.y_raw.byteswap()
 
         return trace

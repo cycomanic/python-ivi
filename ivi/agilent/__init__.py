@@ -2,7 +2,7 @@
 
 Python Interchangeable Virtual Instrument Library
 
-Copyright (c) 2012-2016 Alex Forencich
+Copyright (c) 2012-2017 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -211,6 +211,10 @@ from .agilentE3646A import agilentE3646A
 from .agilentE3647A import agilentE3647A
 from .agilentE3648A import agilentE3648A
 from .agilentE3649A import agilentE3649A
+
+# Source measure units
+from .agilentU2722A import agilentU2722A
+from .agilentU2723A import agilentU2723A
 
 # RF Power Meters
 from .agilent436A import agilent436A

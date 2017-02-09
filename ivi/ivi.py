@@ -2,7 +2,7 @@
 
 Python Interchangeable Virtual Instrument Library
 
-Copyright (c) 2012-2016 Alex Forencich
+Copyright (c) 2012-2017 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -751,6 +751,40 @@ def help(obj=None, itm=None, complete=False, indent=0):
                 the IVI specific driver is compatible. The string has no white space
                 ...
             """))
+
+
+def list_devices():
+    devs = []
+
+    if 'vxi11' in globals():
+        # search for VXI11 devices
+        try:
+            devs.extend(["TCPIP::%s::INSTR" % h for h in vxi11.list_devices()])
+        except:
+            pass
+
+    if 'usbtmc' in globals():
+        # search for USBTMC devices
+        try:
+            for dev in usbtmc.list_devices():
+                idVendor = dev.idVendor
+                idProduct = dev.idProduct
+                iSerial = None
+                # attempt to read serial number
+                try:
+                    iSerial = dev.serial_number
+                except:
+                    pass
+                # append formatted resource string to list
+                if iSerial is None:
+                    devs.append("USB::%d::%d::INSTR" % (idVendor, idProduct))
+                else:
+                    devs.append("USB::%d::%d::%s::INSTR" % (idVendor, idProduct, iSerial))
+            pass
+        except:
+            pass
+
+    return devs
 
 
 class DriverOperation(IviContainer):

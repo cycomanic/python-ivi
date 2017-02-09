@@ -2,7 +2,7 @@
 
 Python Interchangeable Virtual Instrument Library
 
-Copyright (c) 2012-2016 Alex Forencich
+Copyright (c) 2012-2017 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -37,7 +37,10 @@ MeasurementType = set(['current', 'voltage'])
 def get_range(range_list, offset, val):
     l = list()
     for i in range_list:
-        l.append((i, abs(range_list[i][offset])))
+        if offset is None:
+            l.append((i, abs(range_list[i])))
+        else:
+            l.append((i, abs(range_list[i][offset])))
     l.sort(key=lambda x: x[1], reverse=True)
     k = None
     for i in range(len(l)):

@@ -2,7 +2,7 @@
 
 Python Interchangeable Virtual Instrument Library
 
-Copyright (c) 2016-2017 Alex Forencich
+Copyright (c) 2017 Alex Forencich
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -24,19 +24,13 @@ THE SOFTWARE.
 
 """
 
-from .tektronixDPO4000 import *
+from .agilentU2722A import *
 
-class tektronixDPO4032(tektronixDPO4000):
-    "Tektronix DPO4032 IVI oscilloscope driver"
+class agilentU2723A(agilentU2722A):
+    "Agilent U2723A IVI modular source measure unit driver"
 
     def __init__(self, *args, **kwargs):
-        self.__dict__.setdefault('_instrument_id', 'DPO4032')
+        self.__dict__.setdefault('_instrument_id', 'U2723A')
 
-        super(tektronixDPO4032, self).__init__(*args, **kwargs)
+        super(agilentU2723A, self).__init__(*args, **kwargs)
 
-        self._analog_channel_count = 2
-        self._digital_channel_count = 0
-        self._channel_count = self._analog_channel_count + self._digital_channel_count
-        self._bandwidth = 350e6
-
-        self._init_channels()
