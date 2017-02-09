@@ -26,7 +26,7 @@ THE SOFTWARE.
 
 # Oscilloscopes
 # DPO7000
-from .tektronixDPO7000SX import tektronixDPO7000SX
+from .tektronixDPO70000SX import tektronixDPO70000SX
 # DPO4000
 from .tektronixDPO4032 import tektronixDPO4032
 from .tektronixDPO4034 import tektronixDPO4034
