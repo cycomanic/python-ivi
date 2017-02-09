@@ -62,7 +62,6 @@ class tektronixDPO70000SX(tektronixBaseScope):
 
         # Read preamble
         pre = self._ask(":wfmoutpre?").split(';')
-        print(pre)
 
         acq_format = pre[7].strip().upper()
         points = int(pre[6])
@@ -89,7 +88,6 @@ class tektronixDPO70000SX(tektronixBaseScope):
 
 
         # Store in trace object
-        t1 = timer()
         if point_fmt == 'RP' and point_size == 1:
             trace.y_raw = array.array('B', raw_data[0:points*2])
         elif point_fmt == 'RP' and point_size == 2:
@@ -105,7 +103,6 @@ class tektronixDPO70000SX(tektronixBaseScope):
             trace.y_raw = array.array('f', raw_data[0:points*4])
         else:
             raise UnexpectedResponseException()
-        print("convert %f"%(timer()-t1))
 
         if (byte_order == 'LSB') != (sys.byteorder == 'little'):
             trace.y_raw.byteswap()
