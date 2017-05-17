@@ -50,6 +50,23 @@ class tektronixDPO70000SX(tektronixBaseScope):
         self._identity_supported_instrument_models = ['DPO72304SX', 'DPO73304SX',
                 'DPO750002SX', 'DPO77002SX', 'DPS73308SX', 'DPS75004SX', 'DPS77004SX']
 
+        self._add_property("acquisition.sample_rate",
+                           self._get_acquisition_sample_rate,
+                           self._set_acquisition_sample_rate,
+                           None,
+                           ivi.Doc("""
+                           Get or set the sampling rate of the oscilloscope. Only works if in "manual" or "auto" horizontal mode
+                           """))
+        self._add_property("horizontal.mode",
+                           self._get_horizontal_mode,
+                           self._set_horizontal_mode,
+                           None,
+                           ivi.Doc("""
+                           Set the horizontal mode for calculating time window, sampling rate and record length
+                           * 'auto': attempts to keep record length the same when changing time per division. Record length is read only.
+                           * 'constant': Keep sample rate constant when changing time per division. Record length is read only.
+                           * 'manual': sample mode and record length can be adjusted. Time per division is read only.
+                           """))
         self._init_channels()
 
 
@@ -58,15 +75,29 @@ class tektronixDPO70000SX(tektronixBaseScope):
             value = self._ask(":horizontal:mode?").lower()
             self._horizontal_mode = [k for k,v in HorizontalModeMapping.items() if v==value][0]
             self._set_cache_valid()
-        return self._acquisition_type
+        return self._horizontal_mode
 
     def _set_horizontal_mode(self, value):
         if value not in HorizontalModeMapping:
             raise ivi.ValueNotSupportedException()
         if not self._driver_operation_simulate:
-            self._write(":horizontal:mode %s" % AcquisitionTypeMapping[value])
-        self._horizontal_mode = vlaue
+            self._write(":horizontal:mode %s" % HorizontalModeMapping[value])
+        self._horizontal_mode = value
         self._set_cache_valid()
-        
+
+    def _get_acquisition_record_length(self):
+        if not self._driver_operation_simulate:#record length updates when changing timebase or sampling rate in some modes
+            return int(self._ask(":horizontal:recordlength?"))
+
+    def _get_acquisition_sample_rate(self):
+        if not self._driver_operation_simulate:#sampling rate updates when changing timebase or sampling rate in some modes
+            return float(self._ask(":horizontal:mode:samplerate?"))
+
+    def _set_acquisition_sample_rate(self, value):
+        if self.horizontal.mode is "constant":
+            raise ivi.OperationNotSupportedException("sample rate is read only in 'constant' mode")
+        if not self._driver_operation_simulate:
+            self._write(":horizontal:mode:samplerate %g"%float(value))
+
 
 
