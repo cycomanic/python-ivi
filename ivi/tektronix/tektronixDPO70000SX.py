@@ -115,7 +115,6 @@ class tektronixDPO70000SX(tektronixBaseScope):
 
         # Read preamble
         pre = self._ask(":wfmoutpre?").split(';')
-        print(pre)
 
         acq_format = pre[7].strip().upper()
         points = int(pre[6])
